@@ -129,6 +129,8 @@ int main(int, char**) {
                         diffViewer = !diffViewer;
 					}
 
+                    viewerInstance->displayDiff();
+
 					ImGui::EndMenu();
 				}
 
@@ -166,6 +168,10 @@ int main(int, char**) {
             if (diffViewer) {
                 ImGui::Begin("Diff viewer");
 				ImGui::Text("Diff viewer");
+                if (ImGui::Button("Generate diff")) {
+                    std::cout << "Generating diff..." << std::endl;
+					viewerInstance->loadDiff();
+				}
                 viewerInstance->displayDiff();
 				ImGui::End();
             }

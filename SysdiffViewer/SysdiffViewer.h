@@ -45,10 +45,35 @@ public:
 
 	void displayChildren(FileMapLeaf* parent) {
 		for (FileMapLeaf* child : parent->getChildren()) {
+			ImVec4 color = ImVec4(1.0f, 1.0f, 1.0f, 1.0f);
+			switch (child->getColor()) {
+				case FileMapLeafColor::BLACK:
+					color = ImVec4(0.0f, 0.0f, 0.0f, 1.0f);
+					break;
+				case FileMapLeafColor::RED:
+					color = ImVec4(0.5f, 0.0f, 0.0f, 1.0f);
+					break;
+				case FileMapLeafColor::ORANGE:
+					color = ImVec4(0.5f, 0.5f, 0.0f, 1.0f);
+					break;
+			}
+
+			
+			ImGui::PushStyleColor(ImGuiCol_Text, color);
+			
+			// add on hover
+
 			if (ImGui::TreeNode(child->getPath().c_str())) {
 				displayChildren(child);
 				ImGui::TreePop();
 			}
+			if (ImGui::IsItemHovered()) {
+				ImGui::BeginTooltip();
+				ImGui::Text(std::format("Hash: {}", child->getHash()).c_str());
+				ImGui::EndTooltip();
+			}
+			
+			ImGui::PopStyleColor();
 		}
 	}
 
