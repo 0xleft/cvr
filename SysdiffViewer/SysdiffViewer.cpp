@@ -1,4 +1,10 @@
 #include "SysdiffViewer.h"
+#include <stdio.h>
+#include <iostream>
+#include <fstream>
+#include <format>
+#include <sstream>
+
 
 // [Win32] Our example includes a copy of glfw3.lib pre-compiled with VS2010 to maximize ease of testing and compatibility with old VS compilers.
 // To link with VS2010-era libraries, VS2015+ requires linking with legacy_stdio_definitions.lib, which we do using this pragma.
@@ -14,6 +20,27 @@
 
 static void glfw_error_callback(int error, const char* description) {
     fprintf(stderr, "GLFW Error %d: %s\n", error, description);
+}
+
+static nlohmann::json parseFile(std::string file) {
+    std::ifstream t(file);
+    std::stringstream buffer;
+    buffer << t.rdbuf();
+    std::string str = buffer.str();
+    
+    fprintf(stderr, "File: %s\n", str.c_str());
+
+    try {
+        // why tf this causes lag?
+        nlohmann::json j = nlohmann::json::parse(str);
+
+        return j;
+    }
+    catch (...) {
+        return NULL;
+    }
+
+    return NULL;
 }
 
 // Main code
@@ -70,6 +97,8 @@ int main(int, char**) {
 
     ImVec4 clear_color = ImVec4(0.77f, 0.77f, 0.77f, 1.00f);
 
+    bool diffViewer = false;
+
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
 
@@ -94,30 +123,60 @@ int main(int, char**) {
 
                     ImGui::EndMenu();
                 }
+
+                if (ImGui::BeginMenu("View")) {
+                    if (ImGui::MenuItem("Diff viewer")) {
+                        diffViewer = !diffViewer;
+					}
+
+					ImGui::EndMenu();
+				}
+
                 ImGui::EndMainMenuBar();
             }
 
-            // diff display tool
-            if (viewerInstance->getBase() != NULL && viewerInstance->getSecond() != NULL) {
+            if (viewerInstance->getBase() != NULL) {
+                ImGui::Begin("Base");
+                ImGui::Text("Base");
+                ImGui::Text(std::format("Path: {}", fdinstanceBase.GetFilePathName()).c_str());
+                viewerInstance->displayBaseMap();
+                ImGui::End();
+			}
                 
+            if (viewerInstance->getSecond() != NULL) {
+                ImGui::Begin("Second");
+                ImGui::Text("Second");
+                ImGui::Text(std::format("Path: {}", fdinstanceSecond.GetFilePathName()).c_str());
+                viewerInstance->displaySecondMap();
+                ImGui::End();
             }
-
 
             if (fdinstanceBase.Display("ChooseFileDlgKey")) {
                 if (fdinstanceBase.IsOk()) {
                     std::string filePathName = fdinstanceBase.GetFilePathName();
                     std::string filePath = fdinstanceBase.GetCurrentPath();
+
+                    viewerInstance->setBase(parseFile(filePathName));
+                    viewerInstance->loadBaseMap();
                 }
 
                 fdinstanceBase.Close();
             }
 
+            if (diffViewer) {
+                ImGui::Begin("Diff viewer");
+				ImGui::Text("Diff viewer");
+                viewerInstance->displayDiff();
+				ImGui::End();
+            }
+
             if (fdinstanceSecond.Display("ChooseFileDlgKey")) {
                 if (fdinstanceSecond.IsOk()) {
-                    // load json and display stuff
-
                     std::string filePathName = fdinstanceSecond.GetFilePathName();
                     std::string filePath = fdinstanceSecond.GetCurrentPath();
+
+                    viewerInstance->setSecond(parseFile(filePathName));
+                    viewerInstance->loadSecondMap();
                 }
 
                 fdinstanceSecond.Close();
