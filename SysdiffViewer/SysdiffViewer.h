@@ -2,6 +2,7 @@
 
 // #pragma comment(linker, "/SUBSYSTEM:windows /ENTRY:mainCRTStartup")
 
+#include <iostream>
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -97,59 +98,15 @@ public:
 		ImGui::EndChild();
 	}
 
-	void loadDiffSection(nlohmann::json baseSection, nlohmann::json secondSection, FileMapLeaf* parent) {
-		for (nlohmann::json secondChild : secondSection) {
-			try {
-				nlohmann::json baseChild = baseSection[secondChild["path"]];
-
-				if (baseChild["hash"] == secondChild["hash"]) {
-					FileMapLeaf* leaf = new FileMapLeaf(secondChild["hash"], secondChild["path"]);
-					leaf->setParent(parent);
-					parent->addChild(leaf);
-
-					loadDiffSection(baseChild["children"], secondChild["children"], leaf);
-				}
-				else {
-					FileMapLeaf* leaf = new FileMapLeaf(secondChild["hash"], secondChild["path"]);
-					leaf->setParent(parent);
-					leaf->setColor(FileMapLeafColor::ORANGE);
-					parent->addChild(leaf);
-
-					loadDiffSection(baseChild["children"], secondChild["children"], leaf);
-				}
-			}
-			catch (...) {
-				FileMapLeaf* leaf = new FileMapLeaf(secondChild["hash"], secondChild["path"]);
-				leaf->setParent(parent);
-				leaf->setColor(FileMapLeafColor::GREEN);
-				parent->addChild(leaf);
-			}
-		}
-
-		for (nlohmann::json baseChild : baseSection) {
-			try {
-				nlohmann::json secondChild = secondSection[baseChild["path"]];
-			}
-			catch (...) { 
-				try {
-					FileMapLeaf* leaf = new FileMapLeaf(baseChild["hash"], baseChild["path"]);
-					leaf->setParent(parent);
-					leaf->setColor(FileMapLeafColor::RED);
-					parent->addChild(leaf);
-				} catch (...) { continue;
-				}
-			}
-		}
-	}
-
 	void loadDiff() {
 		if (this->base == NULL || this->second == NULL) { return; }
 		this->fileMapDiff->~FileMap();
 		this->fileMapDiff = new FileMap();
 
-		FileMapLeaf* root = new FileMapLeaf(this->base["hash"], this->base["path"]);
+		FileMapLeaf* root = new FileMapLeaf("", "");
 
-		loadDiffSection(this->base["children"], this->second["children"], root);
+		// recursively compare the two maps
+		root->compare(this->fileMapBase->getRoot(), this->fileMapSecond->getRoot(), root);
 
 		this->fileMapDiff->setRoot(root);
 	}
@@ -178,6 +135,9 @@ public:
 			loadSection(this->base["children"], root);
 		}
 		catch (...) { this->base = NULL; return; }
+
+		nlohmann::json placeholder = nlohmann::json::object();
+		this->base = placeholder;
 	}
 
 	void loadSecondMap() {
@@ -190,6 +150,9 @@ public:
 			loadSection(this->second["children"], root);
 		}
 		catch (...) { this->second = NULL; return; }
+
+		nlohmann::json placeholder = nlohmann::json::object();
+		this->second = placeholder;
 	}
 
 	~SysdiffViewer() {

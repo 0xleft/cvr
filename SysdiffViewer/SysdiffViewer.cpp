@@ -97,7 +97,7 @@ int main(int, char**) {
 
     ImVec4 clear_color = ImVec4(0.77f, 0.77f, 0.77f, 1.00f);
 
-    bool diffViewer = false;
+    bool diffViewer = true;
 
     while (!glfwWindowShouldClose(window)) {
         glfwPollEvents();
@@ -160,6 +160,7 @@ int main(int, char**) {
 
                     viewerInstance->setBase(parseFile(filePathName));
                     viewerInstance->loadBaseMap();
+                    viewerInstance->loadDiff();
                 }
 
                 fdinstanceBase.Close();
@@ -183,6 +184,7 @@ int main(int, char**) {
 
                     viewerInstance->setSecond(parseFile(filePathName));
                     viewerInstance->loadSecondMap();
+                    viewerInstance->loadDiff();
                 }
 
                 fdinstanceSecond.Close();

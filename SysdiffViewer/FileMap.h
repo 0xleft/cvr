@@ -38,6 +38,47 @@ public:
 			delete child;
 		}
 	}
+
+	void compare(FileMapLeaf* base, FileMapLeaf* second, FileMapLeaf* output) {
+		if (base->getHash() != second->getHash()) {
+			FileMapLeaf* baseChild = new FileMapLeaf(base->getHash(), base->getPath());
+			baseChild->setColor(FileMapLeafColor::ORANGE);
+			output->addChild(baseChild);
+		}
+
+		for (FileMapLeaf* child : second->getChildren()) {
+			bool found = false;
+			for (FileMapLeaf* baseChild : base->getChildren()) {
+				if (child->getPath() == baseChild->getPath()) {
+					found = true;
+					compare(baseChild, child, output);
+					break;
+				}
+			}
+
+			if (!found) {
+				FileMapLeaf* newChild = new FileMapLeaf(child->getHash(), child->getPath());
+				newChild->setColor(FileMapLeafColor::GREEN);
+				output->addChild(newChild);
+			}
+		}
+
+		for (FileMapLeaf* child : base->getChildren()) {
+			bool found = false;
+			for (FileMapLeaf* secondChild : second->getChildren()) {
+				if (child->getPath() == secondChild->getPath()) {
+					found = true;
+					break;
+				}
+			}
+
+			if (!found) {
+				FileMapLeaf* newChild = new FileMapLeaf(child->getHash(), child->getPath());
+				newChild->setColor(FileMapLeafColor::RED);
+				output->addChild(newChild);
+			}
+		}
+	}
 };
 
 class FileMap {
