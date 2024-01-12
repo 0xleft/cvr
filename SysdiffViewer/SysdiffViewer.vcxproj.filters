@@ -66,4 +66,7 @@
     <ClInclude Include="include\ImGuiFileDialog.h" />
     <ClInclude Include="include\ImGuiFileDialogConfig.h" />
   </ItemGroup>
+  <ItemGroup>
+    <None Include="README.md" />
+  </ItemGroup>
 </Project>
