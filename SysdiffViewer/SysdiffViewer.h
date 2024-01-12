@@ -56,21 +56,22 @@ public:
 				case FileMapLeafColor::ORANGE:
 					color = ImVec4(0.5f, 0.5f, 0.0f, 1.0f);
 					break;
+				case FileMapLeafColor::GREEN:
+					color = ImVec4(0.0f, 0.5f, 0.0f, 1.0f);
+					break;
 			}
 
 			
 			ImGui::PushStyleColor(ImGuiCol_Text, color);
 			
-			// add on hover
-
 			if (ImGui::TreeNode(child->getPath().c_str())) {
 				displayChildren(child);
 				ImGui::TreePop();
 			}
 			if (ImGui::IsItemHovered()) {
-				ImGui::BeginTooltip();
-				ImGui::Text(std::format("Hash: {}", child->getHash()).c_str());
-				ImGui::EndTooltip();
+				//ImGui::BeginTooltip();
+				//ImGui::Text(std::format("Hash: {}", child->getHash()).c_str());
+				//ImGui::EndTooltip();
 			}
 			
 			ImGui::PopStyleColor();
@@ -96,8 +97,61 @@ public:
 		ImGui::EndChild();
 	}
 
+	void loadDiffSection(nlohmann::json baseSection, nlohmann::json secondSection, FileMapLeaf* parent) {
+		for (nlohmann::json secondChild : secondSection) {
+			try {
+				nlohmann::json baseChild = baseSection[secondChild["path"]];
+
+				if (baseChild["hash"] == secondChild["hash"]) {
+					FileMapLeaf* leaf = new FileMapLeaf(secondChild["hash"], secondChild["path"]);
+					leaf->setParent(parent);
+					parent->addChild(leaf);
+
+					loadDiffSection(baseChild["children"], secondChild["children"], leaf);
+				}
+				else {
+					FileMapLeaf* leaf = new FileMapLeaf(secondChild["hash"], secondChild["path"]);
+					leaf->setParent(parent);
+					leaf->setColor(FileMapLeafColor::ORANGE);
+					parent->addChild(leaf);
+
+					loadDiffSection(baseChild["children"], secondChild["children"], leaf);
+				}
+			}
+			catch (...) {
+				FileMapLeaf* leaf = new FileMapLeaf(secondChild["hash"], secondChild["path"]);
+				leaf->setParent(parent);
+				leaf->setColor(FileMapLeafColor::GREEN);
+				parent->addChild(leaf);
+			}
+		}
+
+		for (nlohmann::json baseChild : baseSection) {
+			try {
+				nlohmann::json secondChild = secondSection[baseChild["path"]];
+			}
+			catch (...) { 
+				try {
+					FileMapLeaf* leaf = new FileMapLeaf(baseChild["hash"], baseChild["path"]);
+					leaf->setParent(parent);
+					leaf->setColor(FileMapLeafColor::RED);
+					parent->addChild(leaf);
+				} catch (...) { continue;
+				}
+			}
+		}
+	}
+
 	void loadDiff() {
 		if (this->base == NULL || this->second == NULL) { return; }
+		this->fileMapDiff->~FileMap();
+		this->fileMapDiff = new FileMap();
+
+		FileMapLeaf* root = new FileMapLeaf(this->base["hash"], this->base["path"]);
+
+		loadDiffSection(this->base["children"], this->second["children"], root);
+
+		this->fileMapDiff->setRoot(root);
 	}
 
 	void loadSection(nlohmann::json section, FileMapLeaf* parent) {

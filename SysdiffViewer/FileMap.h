@@ -6,7 +6,8 @@ enum class FileMapLeafColor {
 	WHITE,
 	RED,
 	ORANGE,
-	BLACK
+	BLACK,
+	GREEN
 };
 
 class FileMapLeaf {
